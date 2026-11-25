@@ -15,7 +15,7 @@ SCHEME=${SCHEME:-Dark}
 # Pinned on purpose: a theme update must be a deliberate act, and it overwrites user.css.
 THEME_REPO=${THEME_REPO:-mcloudHQ/mcloud}
 THEME_COMMIT=${THEME_COMMIT:-91ee20818ddbf1df276904411fc61c917d362c04}
-EXTENSIONS=${EXTENSIONS:-"fullAppDisplay.js|keyboardShortcut.js|shuffle+.js|bookmark.js"}
+EXTENSIONS=${EXTENSIONS:-"fullAppDisplay.js|keyboardShortcut.js|shuffle+.js"}
 CUSTOM_APPS=${CUSTOM_APPS:-"marketplace|lyrics-plus"}
 FAD_KEY=${FAD_KEY:-"ctrl+shift+f"}   # macOS owns f11 (Show Desktop)
 

@@ -19,7 +19,6 @@ lives in files you can version, diff and share.
 | `fullAppDisplay` | shipped with spicetify | Full-window artwork on **Ctrl+Shift+F** (F11 is macOS's Show Desktop) |
 | `keyboardShortcut` | shipped with spicetify | `Ctrl+Tab` sidebar, `g g` / `Shift+G`, `Shift+H`/`Shift+L`, `m` like, `Ctrl+arrows` |
 | `shuffle+` | shipped with spicetify | True, unbiased shuffle |
-| `bookmark` | shipped with spicetify | Bookmark a page, a track, or a track position |
 | `lyrics-plus` | shipped with spicetify | Synced lyrics, LRCLIB / lrc.red / Genius / Netease |
 | CSS overrides | this repo (`overrides.css`) | Type scale, reduce-motion, FAD chrome hiding, Home promo-row hiding |
 
@@ -143,6 +142,11 @@ rm -rf ~/spotify-setup ~/.config/spicetify/Themes/AppleMusicMac
 - `keyboardShortcut` binds `Ctrl+Q` to quitting Spotify and `m` to liking.
   Remove those lines in `~/.config/spicetify/Extensions/keyboardShortcut.js`
   (or in `setup.sh` afterwards) if they get in the way.
+- **`bookmark` is deliberately not installed.** spicetify's bundled version
+  renders its menu with `ReactDOM.render(<MenuItem/>)`, which Spotify 1.3.10
+  rejects (`useNavigateStable must be used within a StableUseNavigateProvider`).
+  It throws on boot and never finishes initialising. Re-add it once spicetify
+  ships a version built for this client.
 - **Marketplace is left installed but is not used for themes.** Installing a
   theme there creates a second, unreproducible mechanism.
 - **No playback-speed control for music, by design of the client.** Spotify's
