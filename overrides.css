@@ -1,0 +1,76 @@
+/* ============================================================
+   user-overrides.css — Darshan's personal layer
+   Appended to the active theme's user.css by setup.sh between
+   the markers below. Do not edit the marker lines.
+   Each section is small and independently reversible.
+   ============================================================ */
+
+/* == user-overrides:start == */
+
+/* --- 1. Typography (Apple-ish: heavier titles, tighter tracking) ---
+   Selectors verified against mcloud's own user.css (.main-entityHeader-*,
+   .main-trackList-*). No effect if Spotify renames them — safe failure. */
+.main-entityHeader-title h1,
+.main-entityHeader-headerText h1,
+[data-testid="entity-header"] h1 {
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.main-trackList-rowTitle {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+[data-testid="component-shelf"] h2,
+section.Shelf h2 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* --- 2. Density (compact rows, smaller list artwork) --- */
+/* (populated during the polish pass) */
+
+/* --- 3. Motion (respect "reduce motion") --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- 4. Full App Display (fullAppDisplay.js, toggled with F11) ---
+   mcloud's sidebar is position:fixed / z-index:40 and paints over FAD,
+   which ships without a z-index. Lift FAD above it, then remove the
+   theme chrome so FAD is a clean full-window view. */
+body.fad-activated #full-app-display {
+  z-index: 100 !important;
+}
+
+body.fad-activated {
+  --am-side: 0px !important;
+}
+
+body.fad-activated #am-sidebar,
+body.fad-activated #am-sidebar-glow,
+body.fad-activated #am-player,
+body.fad-activated .am-native-global,
+body.fad-activated .am-toasts {
+  display: none !important;
+}
+
+/* --- 5. Home declutter: hide shelves built from promo cards ---
+   mcloud's theme.js documents #promotion-default-native-title as the
+   marker for Spotify's "New release from …" promotion cards. Hiding the
+   containing shelf removes only those rows; library/normal shelves stay.
+   To disable: comment out this block, then `spicetify apply`. */
+[data-testid="home-page"] section:has(#promotion-default-native-title) {
+  display: none !important;
+}
+
+/* --- 6. Scratches / one-offs --- */
+/* (populated during the polish pass) */
+
+/* == user-overrides:end == */
