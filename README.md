@@ -51,8 +51,11 @@ cd ~/spotify-setup
 5. append `overrides.css` to the theme's `user.css` between markers,
 6. create a rollback backup if you have none, and apply if you asked.
 
-It **overwrites** `current_theme`, `extensions` and `custom_apps`. If you already
-have a curated spicetify setup, read `setup.sh` first — it's short and commented.
+It **replaces** `current_theme`, but `extensions` and `custom_apps` are
+**merged** into whatever you already have — spicetify never drops an entry on
+its own. To remove one: `spicetify config extensions "name.js-"` then
+`spicetify apply`. If you already have a curated spicetify setup, read
+`setup.sh` first — it's short and commented.
 
 ### Optional: shell helpers (fish)
 
@@ -142,6 +145,12 @@ rm -rf ~/spotify-setup ~/.config/spicetify/Themes/AppleMusicMac
   (or in `setup.sh` afterwards) if they get in the way.
 - **Marketplace is left installed but is not used for themes.** Installing a
   theme there creates a second, unreproducible mechanism.
+- **No playback-speed control for music, by design of the client.** Spotify's
+  player exposes `Spicetify.Platform.PlayerAPI.setSpeed`, but for a music track
+  it refuses with `not_supported_by_content_type`; its own speed UI is gated on
+  the item being a podcast/audiobook episode. No extension can work around a
+  refusal from the native player. Podcasts and audiobooks keep their built-in
+  speed control.
 - This repo does not block Spotify updates, remove ads, or unlock paid features.
 
 ## Credits & licence
