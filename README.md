@@ -1,108 +1,152 @@
-# Spotify customization (macOS, arm64)
+# Spotify, but Apple Music
 
-Spicetify setup tuned to look and behave like Apple Music, built 2026‑11‑23/25.
-Everything here is CLI‑managed: no Marketplace click-installs, so the whole state
-is reproducible from this folder.
+A reproducible spicetify setup that makes the Spotify desktop client look and
+behave like Apple Music: glass sidebar, floating player, Apple-style Now Playing,
+artwork-tinted pages, plus a small set of navigation and lyrics upgrades.
 
-## What's installed
+Everything is CLI-managed. No Marketplace click-installs, so the whole state
+lives in files you can version, diff and share.
+
+![preview](https://raw.githubusercontent.com/mcloudHQ/mcloud/main/docs/screenshot.png)
+
+*Screenshot from the theme's own repo — see [mcloudHQ/mcloud](https://github.com/mcloudHQ/mcloud) for more.*
+
+## What you get
 
 | Piece | Source | Notes |
 |---|---|---|
-| Spotify 1.3.10.2586 | Homebrew cask `spotify` | Standard `.app`, reinstallable with `brew reinstall --cask spotify` |
-| spicetify 2.46.7 | Homebrew `spicetify-cli` | `/opt/homebrew/bin/spicetify`; old curl install left at `~/.spicetify` (unused) |
-| Theme **AppleMusicMac** | [mcloudHQ/mcloud](https://github.com/mcloudHQ/mcloud) @ `91ee208`, MIT | Glass sidebar, floating player, Apple-style Now Playing, 9 accents, light/dark |
-| `fullAppDisplay.js` | spicetify 2.46.7 release | Full-window artwork; **Ctrl+Shift+F** (was F11 — macOS owns that key) |
-| `keyboardShortcut.js` | spicetify 2.46.7 release | `Ctrl+Tab` sidebar, `g g`/`Shift+G`, `Shift+H`/`Shift+L`, `m` like, `Ctrl+arrows` seek/volume. **`Ctrl+Q` quits Spotify** |
-| `shuffle+.js` | spicetify 2.46.7 release | True shuffle; click the shuffle button |
-| `bookmark.js` | spicetify 2.46.7 release | Bookmark page / track / track position |
-| `lyrics-plus` custom app | spicetify 2.46.7 release | Synced lyrics; LRCLIB/lrc.red/Genius/Netease providers |
-| Marketplace | (pre-existing) | Kept for browsing, **not** used to install themes |
+| **AppleMusicMac** theme | [mcloudHQ/mcloud](https://github.com/mcloudHQ/mcloud) (MIT), pinned commit | Glass sidebar, floating player, Now Playing panel, tinted artist pages, 9 accents |
+| `fullAppDisplay` | shipped with spicetify | Full-window artwork on **Ctrl+Shift+F** (F11 is macOS's Show Desktop) |
+| `keyboardShortcut` | shipped with spicetify | `Ctrl+Tab` sidebar, `g g` / `Shift+G`, `Shift+H`/`Shift+L`, `m` like, `Ctrl+arrows` |
+| `shuffle+` | shipped with spicetify | True, unbiased shuffle |
+| `bookmark` | shipped with spicetify | Bookmark a page, a track, or a track position |
+| `lyrics-plus` | shipped with spicetify | Synced lyrics, LRCLIB / lrc.red / Genius / Netease |
+| CSS overrides | this repo (`overrides.css`) | Type scale, reduce-motion, FAD chrome hiding, Home promo-row hiding |
 
-Config: `inject_css 1`, `inject_theme_js 1`, `replace_colors 1`,
-`experimental_features 0`, `home_config 0`, devtools off, update check on,
-`disable_sentry 1`, `disable_ui_logging 1`, `remove_rtl_rule 1`, `expose_apis 1`.
+Extensions and `lyrics-plus` are **not vendored** here. They are copied out of
+your own spicetify install at setup time, so they always match your CLI version.
 
-Personal CSS lives in `overrides.css` and is appended to the theme's `user.css`
-between `/* == user-overrides:start == */` and `/* == user-overrides:end == */`.
-Sections: typography, motion, Full‑App‑Display chrome hiding, Home promo-row hiding.
+## Requirements
 
-## Daily commands
+- macOS (tested), or Linux/Windows — the theme works, but the fish helpers are macOS-only
+- Spotify desktop, launched once so it has generated its app files
+- spicetify 2.46.7+ — `brew install spicetify-cli`, or see [spicetify.app/docs](https://spicetify.app/docs/getting-started)
+- `git`, `curl`, `tar`
+
+## Install
 
 ```sh
-spotify-status            # spicetify/Spotify versions, theme, extensions, backup present?
-spotify-theme <name>      # switch theme by folder name (restarts Spotify)
-spotify-fix               # after a Spotify update: restore -> backup -> apply
+git clone <this-repo-url> ~/spotify-setup
+cd ~/spotify-setup
+./setup.sh            # writes files + config, does not restart Spotify
+./setup.sh --apply    # same, then applies (Spotify restarts)
 ```
 
-`spotify-fix` and friends live in `~/.config/fish/conf.d/spicetify.fish`.
+`setup.sh` is idempotent — run it as often as you like. It will:
+
+1. fetch the theme at the pinned commit if it's missing,
+2. copy the extensions and `lyrics-plus` from your spicetify install,
+3. rebind `fullAppDisplay` to `Ctrl+Shift+F` (macOS steals F11),
+4. set the spicetify config explicitly (including `experimental_features 0`),
+5. append `overrides.css` to the theme's `user.css` between markers,
+6. create a rollback backup if you have none, and apply if you asked.
+
+It **overwrites** `current_theme`, `extensions` and `custom_apps`. If you already
+have a curated spicetify setup, read `setup.sh` first — it's short and commented.
+
+### Optional: shell helpers (fish)
+
+```sh
+curl -fsSL <this-repo-raw-url>/spicetify.fish -o ~/.config/fish/conf.d/spicetify.fish
+```
+
+Gives you `spotify-fix` (repair after a Spotify update), `spotify-theme <name>`,
+and `spotify-status`.
+
+### Enable lyrics inside Full App Display
+
+Press **Ctrl+Shift+F**, **right-click** inside the view, toggle
+**Enable Lyrics Plus integration**. `vertical` in the same modal stacks the
+lyrics under the artwork.
+
+## Customizing
+
+Edit `overrides.css` here, then `./setup.sh --apply`. Your rules are appended
+under a marker block, so a theme update can't silently eat them.
+
+Good starting points:
+
+- **Accent colour** — the theme's own settings (profile menu → mcloud) have 9
+  palettes; no CSS needed.
+- **Tighter rows** — add to section 2, e.g.
+  `.main-trackList-trackListRow { height: 40px !important; }`
+- **Kill the promo rows entirely** — set `homeStyle` to `spotify` in mcloud's
+  settings, or disable section 5.
+- **Live CSS iteration** — `spicetify watch -s` reloads the theme on save;
+  `spicetify enable-devtools` then `Cmd+Opt+I` to find selectors. Turn devtools
+  back off when you're done (`spicetify config always_enable_devtools 0`).
 
 ## Updating
 
 ```sh
-brew upgrade spicetify-cli     # CLI + bundled extensions (then: ./setup.sh --apply)
-brew upgrade --cask spotify    # Spotify itself; expect to run spotify-fix afterwards
+brew upgrade spicetify-cli     # CLI + bundled extensions, then ./setup.sh --apply
+brew upgrade --cask spotify    # Spotify itself, then expect to run spotify-fix
 ```
 
-Theme updates are manual and deliberate — the installed copy is pinned:
+Theme updates are deliberate and pinned. To move to a newer mcloud:
 
 ```sh
-cd ~/spotify-setup
-curl -fL https://codeload.github.com/mcloudHQ/mcloud/tar.gz/<new-commit> -o /tmp/mcloud.tgz
-tar xzf /tmp/mcloud.tgz -C /tmp && cp /tmp/mcloud-*/{theme.js,user.css,color.ini} \
-  ~/.config/spicetify/Themes/AppleMusicMac/
-./setup.sh --apply             # re-appends your override block
+THEME_COMMIT=<new-commit-sha> ./setup.sh --apply
 ```
 
-Pinning matters: `main` can move under you, and a theme update overwrites
-`user.css`, which is why overrides are re-applied by the script.
+Pinning matters: the theme's `user.css` is overwritten on update, which is why
+`setup.sh` re-appends your overrides every time.
 
-## Recovery, in order
+## Recovery
 
-1. **Patch lost after a Spotify update** → `spotify-fix`
+Run these in order; stop at the first one that works.
+
+1. Patch lost after a Spotify update → `./setup.sh --repair`
    (= `spicetify restore`, `spicetify backup`, `spicetify apply`).
-2. **Theme looks wrong / CSS errors** → `spicetify restore backup apply`.
-3. **Backup itself is stale or broken** →
-   `spicetify restore`, `spicetify clear`, `spicetify backup`, `spicetify apply`.
-4. **Everything is a mess** → `brew reinstall --cask spotify` (pristine 1.3.10),
-   open Spotify once, quit, then `spicetify backup apply`.
-5. **Undo the customization entirely** →
-   `spicetify restore && spicetify config current_theme "" inject_css 0 inject_theme_js 0 replace_colors 0 extensions "" custom_apps "" && spicetify apply`
+2. Theme looks wrong / CSS broken → `spicetify restore backup apply`.
+3. Backup stale or broken → `spicetify restore`, `spicetify clear`,
+   `spicetify backup`, `spicetify apply`.
+4. Everything is a mess → reinstall Spotify cleanly
+   (`brew reinstall --cask spotify`), open it once, quit,
+   then `spicetify backup apply`.
+5. Reset to stock UI →
+   ```sh
+   spicetify restore
+   spicetify config current_theme "" inject_css 0 inject_theme_js 0 replace_colors 0 extensions "" custom_apps ""
+   spicetify apply
+   ```
 
-Never run spicetify with `sudo`.
+Never run spicetify with `sudo` and never with `--bypass-admin`.
 
-## Layout
+## Uninstall
 
-```
-~/spotify-setup/
-  setup.sh          idempotent install / --apply / --repair
-  overrides.css     your CSS layer (single source of truth)
-  README.md         this file
-  PLAN.md           the approved plan
-  CHANGELOG.md      every command run, with timestamps
-  logs/             spicetify apply output per batch
-  backups/          config snapshots + pristine Spotify .app tarball dir
-~/.config/spicetify/
-  config-xpui.ini   spicetify config (CLI-managed)
-  Themes/AppleMusicMac/{color.ini,user.css,user.css.orig,theme.js}
-  Extensions/{fullAppDisplay,keyboardShortcut,shuffle+,bookmark}.js
-  CustomApps/{lyrics-plus,marketplace}
-~/.local/state/spicetify/Backup/    pristine xpui.spa/login.spa (rollback)
+```sh
+spicetify restore                       # put Spotify's original files back
+rm -f ~/.config/fish/conf.d/spicetify.fish
+rm -rf ~/spotify-setup ~/.config/spicetify/Themes/AppleMusicMac
+# optional: brew uninstall spicetify-cli
 ```
 
-## Known risks
+## Known limitations
 
-- **Spotify 1.3.10 is above spicetify 2.46.7's official ceiling (1.3.9).** It works
-  today; a future Spotify release can break `apply` until spicetify ships support.
-  Mitigation: `brew upgrade spicetify-cli`, then `spotify-fix`.
-- **Two third-party pieces run JS inside Spotify**: mcloud's `theme.js` and the four
-  extensions. Installed copies are pinned; review diffs before updating.
-- **`Ctrl+Q` quits Spotify** via `keyboardShortcut.js`. Edit the copied file (and
-  `setup.sh` copies it back on each run) if that bites.
-- **Marketplace is installed but unused for themes.** Installing a theme there would
-  create a second, unreproducible mechanism — don't.
-- **LiquidMusic was evaluated and removed**; no license, so it's not redistributed here.
+- Spotify versions above spicetify's supported ceiling still patch, but can break
+  on the next Spotify release. Check `spicetify -v` against the
+  [release notes](https://github.com/spicetify/cli/releases) before blaming the theme.
+- `keyboardShortcut` binds `Ctrl+Q` to quitting Spotify and `m` to liking.
+  Remove those lines in `~/.config/spicetify/Extensions/keyboardShortcut.js`
+  (or in `setup.sh` afterwards) if they get in the way.
+- **Marketplace is left installed but is not used for themes.** Installing a
+  theme there creates a second, unreproducible mechanism.
+- This repo does not block Spotify updates, remove ads, or unlock paid features.
 
-## Deliberate omissions
+## Credits & licence
 
-Spotify update blocking, Marketplace-managed themes, ad-blocking / premium unlocks,
-sudo, custom app development, always-on devtools.
+- Theme: [mcloudHQ/mcloud](https://github.com/mcloudHQ/mcloud) — MIT.
+- spicetify and its bundled extensions: [spicetify/cli](https://github.com/spicetify/cli) — LGPL-2.1.
+- `lyrics-plus` by khanhas, bundled with spicetify.
+- This repo's glue (`setup.sh`, `overrides.css`, docs): MIT — see `LICENSE`.

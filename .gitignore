@@ -1,3 +1,6 @@
+# session-local artefacts, not part of the shareable config
+PLAN.md
+CHANGELOG.md
 backups/
 logs/
 *.dmg

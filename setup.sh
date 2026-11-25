@@ -1,64 +1,85 @@
 #!/bin/sh
-# spotify-setup/setup.sh — idempotent re-install of the Spotify customization.
-# Safe to run repeatedly. Does not apply unless you pass --apply
-# (applying restarts Spotify and interrupts playback).
+# setup.sh — install / repair an Apple-Music-style Spotify customization.
 #
-#   ./setup.sh            # install files + config, then tell you what to run
-#   ./setup.sh --apply    # install, then `spicetify apply` (restarts Spotify)
-#   ./setup.sh --repair   # after a Spotify update: restore/backup + apply
+#   ./setup.sh              install files + config (no restart)
+#   ./setup.sh --apply      install, then apply (restarts Spotify)
+#   ./setup.sh --repair     after a Spotify update: restore -> backup -> apply
+#
+# Idempotent: safe to run repeatedly. Never uses sudo.
 set -eu
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
+
 THEME=${THEME:-AppleMusicMac}
 SCHEME=${SCHEME:-Dark}
-EXTENSIONS="fullAppDisplay.js|keyboardShortcut.js|shuffle+.js|bookmark.js"
-CUSTOM_APPS="marketplace|lyrics-plus"
+# Pinned on purpose: a theme update must be a deliberate act, and it overwrites user.css.
+THEME_REPO=${THEME_REPO:-mcloudHQ/mcloud}
+THEME_COMMIT=${THEME_COMMIT:-91ee20818ddbf1df276904411fc61c917d362c04}
+EXTENSIONS=${EXTENSIONS:-"fullAppDisplay.js|keyboardShortcut.js|shuffle+.js|bookmark.js"}
+CUSTOM_APPS=${CUSTOM_APPS:-"marketplace|lyrics-plus"}
+FAD_KEY=${FAD_KEY:-"ctrl+shift+f"}   # macOS owns f11 (Show Desktop)
 
 say() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 ok()  { printf '\033[32m  ok\033[0m %s\n' "$*"; }
+warn(){ printf '\033[33m  !!\033[0m %s\n' "$*"; }
 die() { printf '\033[31m  !! %s\033[0m\n' "$*" >&2; exit 1; }
 
-command -v spicetify >/dev/null 2>&1 || die "spicetify not on PATH"
+command -v spicetify >/dev/null 2>&1 || die "spicetify not on PATH. Install it: brew install spicetify-cli"
 say "spicetify: $(command -v spicetify) $(spicetify -v 2>/dev/null | tail -1)"
 
 CFG=$(dirname "$(spicetify -c)")
-BUNDLED=$(brew --prefix spicetify-cli 2>/dev/null || true)/libexec
-[ -d "$BUNDLED" ] || BUNDLED="$HOME/.spicetify"
-[ -d "$BUNDLED/Extensions" ] || die "cannot find bundled extensions (looked in $BUNDLED)"
+command -v brew >/dev/null 2>&1 && BUNDLED=$(brew --prefix spicetify-cli 2>/dev/null || true)/libexec
+[ -d "${BUNDLED:-}/Extensions" ] || BUNDLED="$HOME/.spicetify"
+[ -d "$BUNDLED/Extensions" ] || die "no bundled extensions found (looked in $BUNDLED)"
 
-# --- repair mode: after a Spotify update wipes the patch --------------------
+# --- repair mode -----------------------------------------------------------
 if [ "${1:-}" = "--repair" ]; then
-  say "repairing (restore backup, then re-apply)"
-  spicetify restore backup apply || die "restore backup apply failed; see README > Recovery"
+  say "repairing after a Spotify update"
+  spicetify restore || die "restore failed; see README > Recovery"
+  spicetify backup  || die "backup failed; see README > Recovery"
+  spicetify apply   || die "apply failed; see README > Recovery"
   ok "repaired"
   exit 0
 fi
 
-# --- 1. extensions + custom apps ------------------------------------------
+# --- 1. theme (fetch at the pinned commit if missing) ----------------------
+if [ ! -f "$CFG/Themes/$THEME/color.ini" ]; then
+  say "theme $THEME missing — fetching $THEME_REPO@$THEME_COMMIT"
+  TMPT=$(mktemp -d)
+  trap 'rm -rf "$TMPT"' EXIT INT TERM
+  curl -fL --max-time 120 "https://codeload.github.com/$THEME_REPO/tar.gz/$THEME_COMMIT" \
+    -o "$TMPT/theme.tgz" || die "theme download failed"
+  tar xzf "$TMPT/theme.tgz" -C "$TMPT"
+  SRC=$(find "$TMPT" -maxdepth 1 -type d -name 'mcloud-*' | head -1)
+  [ -n "$SRC" ] || die "unexpected theme archive layout"
+  mkdir -p "$CFG/Themes/$THEME"
+  for f in theme.js user.css color.ini; do cp "$SRC/$f" "$CFG/Themes/$THEME/$f"; done
+  ok "theme installed to $CFG/Themes/$THEME"
+else
+  ok "theme $THEME present"
+fi
+
+# --- 2. extensions + custom apps ------------------------------------------
 mkdir -p "$CFG/Extensions" "$CFG/CustomApps"
-for f in fullAppDisplay.js keyboardShortcut.js "shuffle+.js" bookmark.js; do
-  [ -f "$BUNDLED/Extensions/$f" ] || die "missing $BUNDLED/Extensions/$f"
+for f in $(printf '%s' "$EXTENSIONS" | tr '|' ' '); do
+  [ -f "$BUNDLED/Extensions/$f" ] || die "missing bundled extension: $f"
   cp "$BUNDLED/Extensions/$f" "$CFG/Extensions/$f"
 done
 ok "extensions copied from $BUNDLED"
-
-# macOS reserves F11 (Show Desktop), so the key never reaches Spotify.
-# Rebind fullAppDisplay to ctrl+shift+f; idempotent, reapplied on every run.
-FAD="$CFG/Extensions/fullAppDisplay.js"
-if grep -q 'Mousetrap.bind("f11", toggleFad)' "$FAD"; then
-  TMPFAD=$(mktemp)
-  awk '{gsub(/Mousetrap\.bind\("f11", toggleFad\)/,"Mousetrap.bind(\"ctrl+shift+f\", toggleFad)")}1' "$FAD" > "$TMPFAD"
-  mv "$TMPFAD" "$FAD"
-  ok "fullAppDisplay rebound: ctrl+shift+f (was f11, eaten by macOS)"
-fi
 [ -d "$CFG/CustomApps/lyrics-plus" ] || cp -R "$BUNDLED/CustomApps/lyrics-plus" "$CFG/CustomApps/"
 ok "lyrics-plus present"
 
-# --- 2. theme --------------------------------------------------------------
-[ -f "$CFG/Themes/$THEME/color.ini" ] || die "theme $THEME not installed in $CFG/Themes"
-ok "theme $THEME present"
+# macOS reserves F11, so rebind fullAppDisplay. Reapplied on every run because
+# the extension file is copied fresh above.
+FAD="$CFG/Extensions/fullAppDisplay.js"
+if grep -q 'Mousetrap.bind("f11", toggleFad)' "$FAD"; then
+  TMPFAD=$(mktemp)
+  awk -v k="$FAD_KEY" '{gsub(/Mousetrap\.bind\("f11", toggleFad\)/,"Mousetrap.bind(\""k"\", toggleFad)")}1' "$FAD" > "$TMPFAD"
+  mv "$TMPFAD" "$FAD"
+  ok "fullAppDisplay rebound to $FAD_KEY"
+fi
 
-# --- 3. config (explicit, so a fresh machine matches) ----------------------
+# --- 3. config -------------------------------------------------------------
 spicetify config current_theme "$THEME" color_scheme "$SCHEME" >/dev/null
 spicetify config inject_css 1 replace_colors 1 inject_theme_js 1 >/dev/null
 spicetify config extensions "$EXTENSIONS" >/dev/null
@@ -72,16 +93,21 @@ ok "config set"
 CSS="$CFG/Themes/$THEME/user.css"
 [ -f "$CSS" ] || die "no user.css in $CFG/Themes/$THEME"
 [ -f "$CSS.orig" ] || cp "$CSS" "$CSS.orig"
-TMP=$(mktemp)
+TMPC=$(mktemp)
 awk '/^\/\* == user-overrides:start == \*\/$/{skip=1}
      !skip{print}
-     /^\/\* == user-overrides:end == \*\/$/{skip=0}' "$CSS" > "$TMP"
-printf '\n' >> "$TMP"
-cat "$ROOT/overrides.css" >> "$TMP"
-mv "$TMP" "$CSS"
-ok "overrides.css appended between markers (original kept as user.css.orig)"
+     /^\/\* == user-overrides:end == \*\/$/{skip=0}' "$CSS" > "$TMPC"
+printf '\n' >> "$TMPC"
+cat "$ROOT/overrides.css" >> "$TMPC"
+mv "$TMPC" "$CSS"
+ok "overrides.css appended between markers (theme original kept as user.css.orig)"
 
-# --- 5. apply --------------------------------------------------------------
+# --- 5. backup + apply -----------------------------------------------------
+if [ ! -d "$HOME/.local/state/spicetify/Backup" ] && [ ! -d "$CFG/Backup" ]; then
+  warn "no spicetify backup yet — creating one (needed for rollback)"
+  spicetify backup >/dev/null || die "backup failed"
+fi
+
 case "${1:-}" in
   --apply) say "applying (Spotify will restart)"; spicetify apply ;;
   *)       say "not applying. run: spicetify apply   (or: ./setup.sh --apply)" ;;
