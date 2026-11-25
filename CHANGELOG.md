@@ -27,3 +27,8 @@ Every action with a timestamp, the command, its purpose and the result. Newest a
 | 2026-11-25 12:20 | wrote `setup.sh`, appended `overrides.css` to theme `user.css` | Hide mcloud chrome + lift FAD above sidebar | Idempotent (re-run keeps 1 marker block); original kept as `user.css.orig` |
 | 2026-11-25 12:26 | rebind `f11` → `ctrl+shift+f` in `fullAppDisplay.js` via `setup.sh` | macOS owns F11 ("Show Desktop") | Verified line 1040 |
 | 2026-11-25 12:30 | `spicetify apply` | Load CSS + new keybind | FAD opens clean; lyrics visible once toggle enabled |
+| 2026-11-25 12:38 | `spicetify config experimental_features 0 home_config 0` + `apply` | Config hygiene | Applied, exit 0 |
+| 2026-11-25 12:44 | `overrides.css` §1 typography + §5 Home promo rows + `apply` | Apple-ish type, hide promo shelves | Applied, exit 0; user confirmed |
+| 2026-11-25 12:52 | wrote `~/.config/fish/conf.d/spicetify.fish` | `spotify-fix`, `spotify-theme`, `spotify-status` | All three load in a fresh fish shell |
+| 2026-11-25 12:58 | wrote `README.md`, `.gitignore`, `git init` + commit `9508307` | Lock it in | Clean tree; backups/ and logs/ ignored |
+| 2026-11-25 13:00 | health check | Final verification | theme CSS + 4 extensions in app; lyrics-plus/marketplace routes built; backup present |
