@@ -4,8 +4,9 @@ A reproducible spicetify setup that makes the Spotify desktop client look and
 behave like Apple Music: glass sidebar, floating player, Apple-style Now Playing,
 artwork-tinted pages, plus a small set of navigation and lyrics upgrades.
 
-Everything is CLI-managed. No Marketplace click-installs, so the whole state
-lives in files you can version, diff and share.
+Everything is CLI-managed, so the whole state lives in files you can version,
+diff and share. One deliberate exception: **Spicy Lyrics** is installed from
+Marketplace because it is not shipped with spicetify (see [Full screen](#full-screen)).
 
 ![preview](https://raw.githubusercontent.com/mcloudHQ/mcloud/main/docs/screenshot.png)
 
@@ -20,6 +21,7 @@ lives in files you can version, diff and share.
 | `keyboardShortcut` | shipped with spicetify | `Ctrl+Tab` sidebar, `g g` / `Shift+G`, `Shift+H`/`Shift+L`, `m` like, `Ctrl+arrows` |
 | `shuffle+` | shipped with spicetify | True, unbiased shuffle |
 | `lyrics-plus` | shipped with spicetify | Synced lyrics, LRCLIB / lrc.red / Genius / Netease |
+| `Spicy Lyrics` | [Spikerko/spicy-lyrics](https://github.com/Spikerko/spicy-lyrics) (AGPL-3.0), from Marketplace | Word-synced animated lyrics; owns the player's fullscreen button |
 | CSS overrides | this repo (`overrides.css`) | Type scale, reduce-motion, FAD chrome hiding, Home promo-row hiding |
 
 Extensions and `lyrics-plus` are **not vendored** here. They are copied out of
@@ -70,6 +72,25 @@ and `spotify-status`.
 Press **Ctrl+Shift+F**, **right-click** inside the view, toggle
 **Enable Lyrics Plus integration**. `vertical` in the same modal stacks the
 lyrics under the artwork.
+
+### Full screen
+
+The artwork on the player bar **is** the fullscreen button. It opens **Spicy
+Lyrics' fullscreen view**: the theme checks for Spicy's own button
+(`#SpicyLyrics_FullscreenButton`) first and clicks it.
+
+Without Spicy Lyrics it falls back to Spotify's built-in **Cinema Mode**, which
+is a Chromium web-fullscreen. That is the *"To exit full screen, press esc"*
+toast — and while it is active, macOS's green button and Ctrl+Cmd+F do not
+behave normally.
+
+`Ctrl+Shift+F` is a different thing: `fullAppDisplay`, the full-window artwork
+view.
+
+Spicy Lyrics is **not** installed by this repo. Install it once from
+**Marketplace → Extensions → Spicy Lyrics** (it then updates itself).
+`setup.sh` adds it to the extension list only when its loader is already
+present, so a fresh machine still works.
 
 ## Customizing
 
@@ -149,6 +170,10 @@ rm -rf ~/spotify-setup ~/.config/spicetify/Themes/AppleMusicMac
   ships a version built for this client.
 - **Marketplace is left installed but is not used for themes.** Installing a
   theme there creates a second, unreproducible mechanism.
+- **Spicy Lyrics fetches its code at runtime.** Its installed file is a 108-byte
+  loader that imports the bundle from jsDelivr (`@main`) on every launch, so that
+  code is not pinned by this repo. That is the project's official method and
+  exactly what a Marketplace install writes.
 - **No playback-speed control for music, by design of the client.** Spotify's
   player exposes `Spicetify.Platform.PlayerAPI.setSpeed`, but for a music track
   it refuses with `not_supported_by_content_type`; its own speed UI is gated on
@@ -162,4 +187,5 @@ rm -rf ~/spotify-setup ~/.config/spicetify/Themes/AppleMusicMac
 - Theme: [mcloudHQ/mcloud](https://github.com/mcloudHQ/mcloud) — MIT.
 - spicetify and its bundled extensions: [spicetify/cli](https://github.com/spicetify/cli) — LGPL-2.1.
 - `lyrics-plus` by khanhas, bundled with spicetify.
+- Spicy Lyrics: [Spikerko/spicy-lyrics](https://github.com/Spikerko/spicy-lyrics) — AGPL-3.0.
 - This repo's glue (`setup.sh`, `overrides.css`, docs): MIT — see `LICENSE`.

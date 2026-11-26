@@ -69,6 +69,21 @@ ok "extensions copied from $BUNDLED"
 [ -d "$CFG/CustomApps/lyrics-plus" ] || cp -R "$BUNDLED/CustomApps/lyrics-plus" "$CFG/CustomApps/"
 ok "lyrics-plus present"
 
+# Spicy Lyrics is not shipped with spicetify; it is installed from Marketplace,
+# which writes this loader into Extensions. Only list it when it is actually
+# there, so a fresh machine does not get a config entry pointing at nothing.
+# The theme's artwork button prefers its fullscreen view over Spotify's
+# Cinema Mode (see README > Full screen).
+if [ -f "$CFG/Extensions/spicy-lyrics.mjs" ]; then
+  case "|$EXTENSIONS|" in
+    *"|spicy-lyrics.mjs|"*) ;;
+    *) EXTENSIONS="$EXTENSIONS|spicy-lyrics.mjs" ;;
+  esac
+  ok "spicy-lyrics.mjs present (installed from Marketplace)"
+else
+  warn "spicy-lyrics.mjs missing; the player's fullscreen button will fall back to Spotify Cinema Mode"
+fi
+
 # macOS reserves F11, so rebind fullAppDisplay. Reapplied on every run because
 # the extension file is copied fresh above.
 FAD="$CFG/Extensions/fullAppDisplay.js"
